@@ -27,7 +27,23 @@ const createCustomIcon = (status: string) => {
   });
 };
 
-const createTraceIcon = (status: string) => {
+const createTraceIcon = (status: string, gpsLost?: boolean) => {
+  if (gpsLost) {
+    return L.divIcon({
+      className: 'custom-trace-icon',
+      html: `<div style="
+        background: rgba(140, 140, 140, 0.3);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px dashed #8c8c8c;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      "></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+      popupAnchor: [0, -8],
+    });
+  }
   const color = status === 'NORMAL' ? '#52c41a' : status === 'ABNORMAL' ? '#ff4d4f' : '#8c8c8c';
   return L.divIcon({
     className: 'custom-trace-icon',
@@ -62,8 +78,14 @@ export default function VehicleMap({
     ? [vehicles[0].currentLatitude || 39.9042, vehicles[0].currentLongitude || 116.4074]
     : [39.9042, 116.4074];
 
-  const polylinePositions: [number, number][] = tracePoints
-    .filter((p) => p.latitude && p.longitude)
+  const validTracePoints = tracePoints.filter(
+    (p) => p.latitude !== null && p.latitude !== undefined &&
+           p.longitude !== null && p.longitude !== undefined &&
+           !isNaN(p.latitude) && !isNaN(p.longitude)
+  );
+
+  const polylinePositions: [number, number][] = validTracePoints
+    .filter((p) => !p.gpsLost)
     .map((p) => [p.latitude, p.longitude]);
 
   return (
@@ -120,17 +142,22 @@ export default function VehicleMap({
               dashArray="10, 10"
             />
           )}
-          {tracePoints.map((point, index) => (
+          {validTracePoints.map((point, index) => (
             <Marker
               key={index}
-              position={[point.latitude || 0, point.longitude || 0]}
-              icon={createTraceIcon(point.temperatureStatus)}
+              position={[point.latitude, point.longitude]}
+              icon={createTraceIcon(point.temperatureStatus, point.gpsLost)}
             >
               <Popup>
                 <div className="map-popup">
                   <div className="popup-title">
                     {dayjs(point.traceTime).format('MM-DD HH:mm:ss')}
                   </div>
+                  {point.gpsLost && (
+                    <div className="popup-item" style={{ color: '#fa8c16', fontStyle: 'italic' }}>
+                      ⚠️ GPS信号丢失，使用最后已知位置
+                    </div>
+                  )}
                   <div className="popup-item">
                     位置：<span>{point.locationName || '未知'}</span>
                   </div>
@@ -146,7 +173,7 @@ export default function VehicleMap({
                       {point.temperature?.toFixed(1)}°C
                     </span>
                   </div>
-                  {point.humidity && (
+                  {point.humidity !== null && point.humidity !== undefined && (
                     <div className="popup-item">
                       湿度：<span>{point.humidity.toFixed(1)}%</span>
                     </div>

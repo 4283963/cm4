@@ -27,27 +27,68 @@ public class GatewayDataService {
     @Async
     @Transactional
     public void processGatewayData(GatewayDataDTO gatewayData) {
-        log.info("Processing gateway data: messageId={}, vehicle={}",
-                gatewayData.getMessageId(),
-                gatewayData.getVehicle().getPlateNumber());
-
         String plateNumber = gatewayData.getVehicle().getPlateNumber();
+        log.info("Processing gateway data: messageId={}, vehicle={}",
+                gatewayData.getMessageId(), plateNumber);
+
         Vehicle vehicle = vehicleRepository.findByPlateNumber(plateNumber)
                 .orElseGet(() -> createNewVehicle(gatewayData));
 
-        updateVehiclePosition(vehicle, gatewayData);
+        boolean gpsLost = false;
+        Double effectiveLat = vehicle.getCurrentLatitude();
+        Double effectiveLng = vehicle.getCurrentLongitude();
+        String effectiveLocation = null;
+
+        try {
+            GatewayDataDTO.GpsDataDTO gps = gatewayData.getGps();
+            if (gps != null) {
+                Double lat = gps.getEffectiveLatitude();
+                Double lng = gps.getEffectiveLongitude();
+                if (lat != null && lng != null) {
+                    effectiveLat = lat;
+                    effectiveLng = lng;
+                    effectiveLocation = gps.getLocationName();
+                    vehicle.setCurrentLatitude(lat);
+                    vehicle.setCurrentLongitude(lng);
+                    log.debug("GPS valid for {}: {}, {}", plateNumber, lat, lng);
+                } else {
+                    gpsLost = true;
+                    log.warn("GPS signal lost for vehicle {}, using last known position: {}, {}",
+                            plateNumber, effectiveLat, effectiveLng);
+                }
+            } else {
+                gpsLost = true;
+                log.warn("GPS data null for vehicle {}, using last known position", plateNumber);
+            }
+        } catch (Exception e) {
+            gpsLost = true;
+            log.error("Error parsing GPS data for vehicle {}, using last known position. Error: {}",
+                    plateNumber, e.getMessage(), e);
+        }
+
         List<CargoTraceLog> traceLogs = new ArrayList<>();
 
-        for (GatewayDataDTO.TemperatureZoneDataDTO zoneData : gatewayData.getTemperatureZones()) {
-            TemperatureZone zone = updateTemperatureZone(vehicle, zoneData);
-            List<CargoTraceLog> zoneTraceLogs = createTraceLogsForZone(
-                    vehicle, zone, zoneData, gatewayData);
-            traceLogs.addAll(zoneTraceLogs);
+        if (gatewayData.getTemperatureZones() != null) {
+            for (GatewayDataDTO.TemperatureZoneDataDTO zoneData : gatewayData.getTemperatureZones()) {
+                try {
+                    TemperatureZone zone = updateTemperatureZone(vehicle, zoneData);
+                    List<CargoTraceLog> zoneTraceLogs = createTraceLogsForZone(
+                            vehicle, zone, zoneData, gatewayData,
+                            effectiveLat, effectiveLng, effectiveLocation, gpsLost);
+                    traceLogs.addAll(zoneTraceLogs);
+                } catch (Exception e) {
+                    log.error("Error processing zone {} for vehicle {}, skipping this zone but continuing others. Error: {}",
+                            zoneData.getZoneCode(), plateNumber, e.getMessage(), e);
+                }
+            }
         }
 
         if (!traceLogs.isEmpty()) {
             traceLogRepository.saveAll(traceLogs);
-            log.info("Saved {} trace logs for vehicle {}", traceLogs.size(), plateNumber);
+            log.info("Saved {} trace logs for vehicle {} (gpsLost={})",
+                    traceLogs.size(), plateNumber, gpsLost);
+        } else {
+            log.warn("No trace logs generated for vehicle {}, temperature data may be missing", plateNumber);
         }
 
         vehicle.setLastUpdateTime(LocalDateTime.now());
@@ -64,13 +105,7 @@ public class GatewayDataService {
         return vehicleRepository.save(vehicle);
     }
 
-    private void updateVehiclePosition(Vehicle vehicle, GatewayDataDTO gatewayData) {
-        GatewayDataDTO.GpsDataDTO gps = gatewayData.getGps();
-        if (gps != null) {
-            vehicle.setCurrentLatitude(gps.getLatitude());
-            vehicle.setCurrentLongitude(gps.getLongitude());
-        }
-    }
+
 
     private TemperatureZone updateTemperatureZone(Vehicle vehicle,
                                                    GatewayDataDTO.TemperatureZoneDataDTO zoneData) {
@@ -125,7 +160,11 @@ public class GatewayDataService {
             Vehicle vehicle,
             TemperatureZone zone,
             GatewayDataDTO.TemperatureZoneDataDTO zoneData,
-            GatewayDataDTO gatewayData) {
+            GatewayDataDTO gatewayData,
+            Double effectiveLat,
+            Double effectiveLng,
+            String effectiveLocation,
+            boolean gpsLost) {
 
         List<CargoTraceLog> traceLogs = new ArrayList<>();
         List<CargoBatch> cargoBatches = cargoBatchRepository
@@ -134,28 +173,40 @@ public class GatewayDataService {
         BigDecimal zoneTemperature = zone.getCurrentTemperature();
         BigDecimal zoneHumidity = extractHumidity(zoneData);
 
+        if (cargoBatches == null) {
+            return traceLogs;
+        }
+
         for (CargoBatch cargo : cargoBatches) {
-            if (cargo.getTemperatureZone() != null &&
-                    cargo.getTemperatureZone().getZoneCode().equals(zone.getZoneCode())) {
+            try {
+                if (cargo.getTemperatureZone() != null &&
+                        cargo.getTemperatureZone().getZoneCode().equals(zone.getZoneCode())) {
 
-                CargoTraceLog traceLog = new CargoTraceLog();
-                traceLog.setCargoBatch(cargo);
-                traceLog.setTraceTime(gatewayData.getTimestamp() != null ?
-                        gatewayData.getTimestamp() : LocalDateTime.now());
+                    CargoTraceLog traceLog = new CargoTraceLog();
+                    traceLog.setCargoBatch(cargo);
+                    traceLog.setTraceTime(gatewayData.getTimestamp() != null ?
+                            gatewayData.getTimestamp() : LocalDateTime.now());
 
-                if (gatewayData.getGps() != null) {
-                    traceLog.setLatitude(gatewayData.getGps().getLatitude());
-                    traceLog.setLongitude(gatewayData.getGps().getLongitude());
-                    traceLog.setLocationName(gatewayData.getGps().getLocationName());
+                    traceLog.setLatitude(effectiveLat);
+                    traceLog.setLongitude(effectiveLng);
+                    traceLog.setLocationName(effectiveLocation);
+                    traceLog.setGpsLost(gpsLost);
+
+                    if (gpsLost) {
+                        traceLog.setRemark("GPS信号丢失，使用最后已知位置回填");
+                    }
+
+                    traceLog.setTemperature(zoneTemperature);
+                    traceLog.setHumidity(zoneHumidity);
+                    traceLog.setZoneCode(zone.getZoneCode());
+                    traceLog.setVehiclePlate(vehicle.getPlateNumber());
+                    traceLog.setTemperatureStatus(determineTemperatureStatus(cargo, zoneTemperature));
+
+                    traceLogs.add(traceLog);
                 }
-
-                traceLog.setTemperature(zoneTemperature);
-                traceLog.setHumidity(zoneHumidity);
-                traceLog.setZoneCode(zone.getZoneCode());
-                traceLog.setVehiclePlate(vehicle.getPlateNumber());
-                traceLog.setTemperatureStatus(determineTemperatureStatus(cargo, zoneTemperature));
-
-                traceLogs.add(traceLog);
+            } catch (Exception e) {
+                log.error("Error creating trace log for cargo {} in zone {}, skipping. Error: {}",
+                        cargo.getBatchNo(), zone.getZoneCode(), e.getMessage(), e);
             }
         }
 

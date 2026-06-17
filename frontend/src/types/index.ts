@@ -80,6 +80,7 @@ export interface TracePointDTO {
   zoneCode: string;
   vehiclePlate: string;
   remark: string;
+  gpsLost?: boolean;
 }
 
 export interface TemperatureStatsDTO {

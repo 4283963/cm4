@@ -8,6 +8,14 @@
     "driver_id": "DR-001"
   },
   "gps": {
+    "coords": [
+      {
+        "latitude": 39.9142,
+        "longitude": 116.4174,
+        "altitude": 52.5,
+        "accuracy": 3.2
+      }
+    ],
     "latitude": 39.9142,
     "longitude": 116.4174,
     "altitude": 52.5,

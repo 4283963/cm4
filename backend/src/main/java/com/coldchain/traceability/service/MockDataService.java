@@ -173,6 +173,10 @@ public class MockDataService {
     }
 
     public GatewayDataDTO generateMockGatewayData(String plateNumber) {
+        return generateMockGatewayData(plateNumber, false);
+    }
+
+    public GatewayDataDTO generateMockGatewayData(String plateNumber, boolean forceGpsLost) {
         Vehicle vehicle = vehicleRepository.findByPlateNumber(plateNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Vehicle not found: " + plateNumber));
 
@@ -189,14 +193,35 @@ public class MockDataService {
 
         double latChange = (random.nextDouble() - 0.5) * 0.01;
         double lngChange = (random.nextDouble() - 0.5) * 0.01;
+        double newLat = vehicle.getCurrentLatitude() + latChange;
+        double newLng = vehicle.getCurrentLongitude() + lngChange;
+
         GatewayDataDTO.GpsDataDTO gps = new GatewayDataDTO.GpsDataDTO();
-        gps.setLatitude(vehicle.getCurrentLatitude() + latChange);
-        gps.setLongitude(vehicle.getCurrentLongitude() + lngChange);
-        gps.setAltitude(50.0 + random.nextDouble() * 100);
-        gps.setSpeed(40 + random.nextDouble() * 60);
-        gps.setHeading(random.nextDouble() * 360);
-        gps.setSatellites(8 + random.nextInt(6));
-        gps.setLocationName(generateLocationName(plateNumber));
+
+        boolean gpsLost = forceGpsLost || random.nextDouble() < 0.15;
+
+        List<GatewayDataDTO.CoordDTO> coords = new ArrayList<>();
+        if (!gpsLost) {
+            GatewayDataDTO.CoordDTO coord = new GatewayDataDTO.CoordDTO();
+            coord.setLatitude(newLat);
+            coord.setLongitude(newLng);
+            coord.setAltitude(50.0 + random.nextDouble() * 100);
+            coord.setAccuracy(3.0 + random.nextDouble() * 5.0);
+            coords.add(coord);
+            gps.setLatitude(newLat);
+            gps.setLongitude(newLng);
+            gps.setAltitude(coord.getAltitude());
+            gps.setSpeed(40 + random.nextDouble() * 60);
+            gps.setHeading(random.nextDouble() * 360);
+            gps.setSatellites(8 + random.nextInt(6));
+            gps.setLocationName(generateLocationName(plateNumber));
+        } else {
+            gps.setSatellites(0);
+            gps.setSpeed(0.0);
+            gps.setLocationName("信号盲区（隧道/山区）");
+            log.warn("Simulating GPS signal lost for vehicle {} - coords array empty", plateNumber);
+        }
+        gps.setCoords(coords);
         gps.setTimestamp(LocalDateTime.now());
         dto.setGps(gps);
 
@@ -281,6 +306,21 @@ public class MockDataService {
         List<Vehicle> vehicles = vehicleRepository.findAll();
         for (Vehicle vehicle : vehicles) {
             sendMockData(vehicle.getPlateNumber());
+        }
+    }
+
+    @Transactional
+    public void sendMockDataWithGpsLost(String plateNumber) {
+        GatewayDataDTO mockData = generateMockGatewayData(plateNumber, true);
+        gatewayDataService.processGatewayData(mockData);
+        log.info("Mock data with GPS lost sent for vehicle: {}", plateNumber);
+    }
+
+    @Transactional
+    public void sendMockDataWithGpsLostForAllVehicles() {
+        List<Vehicle> vehicles = vehicleRepository.findAll();
+        for (Vehicle vehicle : vehicles) {
+            sendMockDataWithGpsLost(vehicle.getPlateNumber());
         }
     }
 }

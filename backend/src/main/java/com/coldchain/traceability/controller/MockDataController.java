@@ -64,4 +64,28 @@ public class MockDataController {
                 Map.of("status", "SUCCESS",
                         "message", "Mock data processed for all vehicles")));
     }
+
+    @PostMapping("/send-gps-lost/{plateNumber}")
+    public ResponseEntity<ApiResponse<Map<String, String>>> sendMockDataWithGpsLost(
+            @PathVariable String plateNumber) {
+        log.info("Sending mock data with GPS lost for vehicle: {}", plateNumber);
+        try {
+            mockDataService.sendMockDataWithGpsLost(plateNumber);
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("status", "SUCCESS",
+                            "message", "Mock data with GPS lost processed for " + plateNumber)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(404, e.getMessage()));
+        }
+    }
+
+    @PostMapping("/send-all-gps-lost")
+    public ResponseEntity<ApiResponse<Map<String, String>>> sendMockDataWithGpsLostForAll() {
+        log.info("Sending mock data with GPS lost for all vehicles");
+        mockDataService.sendMockDataWithGpsLostForAllVehicles();
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of("status", "SUCCESS",
+                        "message", "Mock data with GPS lost processed for all vehicles")));
+    }
 }

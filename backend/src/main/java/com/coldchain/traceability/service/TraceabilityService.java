@@ -104,6 +104,7 @@ public class TraceabilityService {
         point.setZoneCode(log.getZoneCode());
         point.setVehiclePlate(log.getVehiclePlate());
         point.setRemark(log.getRemark());
+        point.setGpsLost(log.getGpsLost());
         return point;
     }
 

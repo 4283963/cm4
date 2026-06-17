@@ -105,10 +105,11 @@ export default function TemperatureChart({
           label: function (context: any) {
             const point = tracePoints[context.dataIndex];
             const baseLabel = `${context.dataset.label}: ${context.parsed.y?.toFixed(1)}°C`;
+            const gpsNote = point?.gpsLost ? ' ⚠️GPS信号丢失' : '';
             if (point?.locationName) {
-              return `${baseLabel} (${point.locationName})`;
+              return `${baseLabel} (${point.locationName})${gpsNote}`;
             }
-            return baseLabel;
+            return `${baseLabel}${gpsNote}`;
           },
         },
       },

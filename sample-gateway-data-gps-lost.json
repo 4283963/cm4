@@ -1,0 +1,72 @@
+{
+  "gateway_id": "GW-TEST-002",
+  "message_id": "MSG-1705288460000",
+  "timestamp": "2024-01-15T10:31:00",
+  "vehicle": {
+    "plate_number": "京A·12345",
+    "vehicle_id": "VH-001",
+    "driver_id": "DR-001"
+  },
+  "gps": {
+    "coords": [],
+    "satellites": 0,
+    "speed": 0.0,
+    "location_name": "信号盲区（隧道/山区）",
+    "timestamp": "2024-01-15T10:31:00"
+  },
+  "temperature_zones": [
+    {
+      "zone_code": "FROZEN-01",
+      "zone_name": "冷冻区-1",
+      "avg_temperature": -19.5,
+      "status": "NORMAL",
+      "sensors": [
+        {
+          "sensor_id": "TEMP-FZ-01-A",
+          "sensor_type": "temperature",
+          "value": -19.3,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:58"
+        },
+        {
+          "sensor_id": "HUM-FZ-01",
+          "sensor_type": "humidity",
+          "value": 63.0,
+          "unit": "%",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:58"
+        }
+      ]
+    },
+    {
+      "zone_code": "CHILLED-01",
+      "zone_name": "冷藏区-1",
+      "avg_temperature": 2.5,
+      "status": "NORMAL",
+      "sensors": [
+        {
+          "sensor_id": "TEMP-CL-01-A",
+          "sensor_type": "temperature",
+          "value": 2.4,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:59"
+        },
+        {
+          "sensor_id": "HUM-CL-01",
+          "sensor_type": "humidity",
+          "value": 79.0,
+          "unit": "%",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:59"
+        }
+      ]
+    }
+  ],
+  "device_status": {
+    "battery_level": 93,
+    "signal_strength": 15,
+    "connection_status": "WEAK"
+  }
+}

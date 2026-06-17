@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "cargo_trace_logs", indexes = {
     @Index(name = "idx_cargo_batch_id", columnList = "cargo_batch_id"),
     @Index(name = "idx_trace_time", columnList = "traceTime"),
-    @Index(name = "idx_cargo_trace_time", columnList = {"cargo_batch_id", "traceTime"})
+    @Index(name = "idx_cargo_trace_time", columnList = "cargo_batch_id, traceTime")
 })
 public class CargoTraceLog {
 
@@ -50,6 +50,9 @@ public class CargoTraceLog {
 
     @Column(length = 20)
     private String temperatureStatus;
+
+    @Column(nullable = false)
+    private Boolean gpsLost = false;
 
     @Column(length = 500)
     private String remark;

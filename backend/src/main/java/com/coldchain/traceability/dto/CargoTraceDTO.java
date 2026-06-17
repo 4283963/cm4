@@ -45,6 +45,7 @@ public class CargoTraceDTO {
         private String zoneCode;
         private String vehiclePlate;
         private String remark;
+        private Boolean gpsLost;
     }
 
     @Data

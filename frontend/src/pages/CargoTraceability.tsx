@@ -308,6 +308,15 @@ export default function CargoTraceability() {
 
           {traceData && (
             <>
+              {traceData.tracePoints.filter(p => p.gpsLost).length > 0 && (
+                <Alert
+                  message={`检测到 ${traceData.tracePoints.filter(p => p.gpsLost).length} 次 GPS 信号丢失（隧道/山区）`}
+                  description="系统已自动使用最后已知位置回填，温度数据完整保留，溯源链条未断裂"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
               <Card title="货品基本信息" style={{ marginBottom: 16 }}>
                 <Row gutter={[16, 16]}>
                   <Col span={12}>
@@ -487,6 +496,23 @@ export default function CargoTraceability() {
                     </div>
                   </Card>
                 </Col>
+                {traceData.tracePoints.filter(p => p.gpsLost).length > 0 && (
+                  <Col xs={24} sm={12} md={6}>
+                    <Card>
+                      <div className="stat-card">
+                        <div className="stat-value" style={{ color: '#fa8c16' }}>
+                          {traceData.tracePoints.filter(p => p.gpsLost).length}
+                        </div>
+                        <div className="stat-label">
+                          GPS信号丢失次数
+                        </div>
+                        <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 8 }}>
+                          已自动回填位置，温度数据完整
+                        </div>
+                      </div>
+                    </Card>
+                  </Col>
+                )}
               </Row>
 
               {traceData.temperatureStats.alerts.length > 0 && (
@@ -618,11 +644,32 @@ export default function CargoTraceability() {
                           .reverse()
                           .slice(0, 20)
                           .map((point: TracePointDTO, index: number) => ({
-                            color:
-                              point.temperatureStatus === 'NORMAL' ? 'green' : 'red',
-                            dot: getAlertIcon(point.temperatureStatus),
+                            color: point.gpsLost
+                              ? 'orange'
+                              : point.temperatureStatus === 'NORMAL'
+                              ? 'green'
+                              : 'red',
+                            dot: point.gpsLost ? (
+                              <EnvironmentOutlined style={{ color: '#fa8c16' }} />
+                            ) : (
+                              getAlertIcon(point.temperatureStatus)
+                            ),
                             children: (
                               <Card size="small" style={{ marginBottom: 8 }}>
+                                {point.gpsLost && (
+                                  <div
+                                    style={{
+                                      background: '#fff7e6',
+                                      padding: '6px 12px',
+                                      borderRadius: 4,
+                                      marginBottom: 8,
+                                      fontSize: 12,
+                                      color: '#fa8c16',
+                                    }}
+                                  >
+                                    ⚠️ GPS信号丢失（隧道/山区），使用最后已知位置回填
+                                  </div>
+                                )}
                                 <div
                                   style={{
                                     display: 'flex',
@@ -649,6 +696,11 @@ export default function CargoTraceability() {
                                     <div style={{ color: '#8c8c8c', fontSize: 12 }}>
                                       <EnvironmentOutlined style={{ marginRight: 4 }} />
                                       位置
+                                      {point.gpsLost && (
+                                        <span style={{ color: '#fa8c16', marginLeft: 4 }}>
+                                          (估算)
+                                        </span>
+                                      )}
                                     </div>
                                     <div style={{ fontWeight: 500 }}>
                                       {point.locationName || '未知位置'}
@@ -674,7 +726,7 @@ export default function CargoTraceability() {
                                     >
                                       {point.temperature?.toFixed(1)}°C
                                     </div>
-                                    {point.humidity && (
+                                    {point.humidity !== null && point.humidity !== undefined && (
                                       <div style={{ fontSize: 12, color: '#8c8c8c' }}>
                                         湿度: {point.humidity.toFixed(1)}%
                                       </div>

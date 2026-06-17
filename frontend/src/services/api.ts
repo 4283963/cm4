@@ -53,6 +53,12 @@ export const mockApi = {
 
   sendMockDataForAll: () =>
     api.post<ApiResponse<unknown>>('/mock/send-all').then((res) => res.data.data),
+
+  sendMockDataWithGpsLost: (plateNumber: string) =>
+    api.post<ApiResponse<unknown>>(`/mock/send-gps-lost/${plateNumber}`).then((res) => res.data.data),
+
+  sendMockDataWithGpsLostForAll: () =>
+    api.post<ApiResponse<unknown>>('/mock/send-all-gps-lost').then((res) => res.data.data),
 };
 
 export default api;

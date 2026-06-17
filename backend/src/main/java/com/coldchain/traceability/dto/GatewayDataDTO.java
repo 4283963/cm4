@@ -43,6 +43,9 @@ public class GatewayDataDTO {
 
     @Data
     public static class GpsDataDTO {
+        @JsonProperty("coords")
+        private List<CoordDTO> coords;
+
         @JsonProperty("latitude")
         private Double latitude;
 
@@ -66,6 +69,43 @@ public class GatewayDataDTO {
 
         @JsonProperty("timestamp")
         private LocalDateTime timestamp;
+
+        public boolean hasValidCoords() {
+            return coords != null && !coords.isEmpty();
+        }
+
+        public Double getFirstLatitude() {
+            return hasValidCoords() ? coords.get(0).getLatitude() : null;
+        }
+
+        public Double getFirstLongitude() {
+            return hasValidCoords() ? coords.get(0).getLongitude() : null;
+        }
+
+        public Double getEffectiveLatitude() {
+            if (latitude != null) return latitude;
+            return getFirstLatitude();
+        }
+
+        public Double getEffectiveLongitude() {
+            if (longitude != null) return longitude;
+            return getFirstLongitude();
+        }
+    }
+
+    @Data
+    public static class CoordDTO {
+        @JsonProperty("latitude")
+        private Double latitude;
+
+        @JsonProperty("longitude")
+        private Double longitude;
+
+        @JsonProperty("altitude")
+        private Double altitude;
+
+        @JsonProperty("accuracy")
+        private Double accuracy;
     }
 
     @Data

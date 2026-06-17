@@ -50,6 +50,16 @@ export default function VehicleDashboard() {
     }
   };
 
+  const handleSendMockDataWithGpsLost = async (plateNumber: string) => {
+    try {
+      await mockApi.sendMockDataWithGpsLost(plateNumber);
+      message.success(`${plateNumber} GPS信号丢失模拟数据已推送`);
+      fetchVehicles();
+    } catch (error) {
+      message.error('推送失败');
+    }
+  };
+
   const showVehicleDetail = (vehicle: VehicleStatusDTO) => {
     setSelectedVehicle(vehicle);
     setModalVisible(true);
@@ -93,14 +103,45 @@ export default function VehicleDashboard() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 className="page-title">运输车辆状态看板</h1>
-        <Button
-          type="primary"
-          icon={<ReloadOutlined spin={loading} />}
-          onClick={fetchVehicles}
-          loading={loading}
-        >
-          刷新数据
-        </Button>
+        <Space>
+          <Button
+            icon={<WarningOutlined />}
+            danger
+            onClick={async () => {
+              try {
+                await mockApi.sendMockDataWithGpsLostForAll();
+                message.success('所有车辆 GPS 信号丢失模拟数据已推送');
+                fetchVehicles();
+              } catch (error) {
+                message.error('推送失败');
+              }
+            }}
+          >
+            模拟全部GPS丢失
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={async () => {
+              try {
+                await mockApi.sendMockDataForAll();
+                message.success('所有车辆模拟数据已推送');
+                fetchVehicles();
+              } catch (error) {
+                message.error('推送失败');
+              }
+            }}
+          >
+            推送全部数据
+          </Button>
+          <Button
+            type="primary"
+            icon={<ReloadOutlined spin={loading} />}
+            onClick={fetchVehicles}
+            loading={loading}
+          >
+            刷新数据
+          </Button>
+        </Space>
       </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -176,6 +217,14 @@ export default function VehicleDashboard() {
                   onClick={() => handleSendMockData(vehicle.plateNumber)}
                 >
                   <ReloadOutlined /> 推送数据
+                </Button>,
+                <Button
+                  key="gps-lost"
+                  type="link"
+                  danger
+                  onClick={() => handleSendMockDataWithGpsLost(vehicle.plateNumber)}
+                >
+                  <WarningOutlined /> 模拟GPS丢失
                 </Button>,
                 <Button
                   key="cargos"
