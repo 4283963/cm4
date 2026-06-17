@@ -51,6 +51,11 @@ public class CargoBatch {
     @Column(length = 20)
     private String status;
 
+    @Column(length = 20)
+    private String alertStatus = "NORMAL";
+
+    private Long lastAlertId;
+
     private LocalDateTime loadingTime;
 
     private LocalDateTime expectedArrivalTime;

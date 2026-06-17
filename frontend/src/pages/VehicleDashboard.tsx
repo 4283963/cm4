@@ -1,18 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Tag, List, Avatar, Button, Space, Modal, message } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { Row, Col, Card, Statistic, Tag, List, Avatar, Button, Space, Modal, message, Badge } from 'antd';
 import {
   CarOutlined,
   EnvironmentOutlined,
-  ThermometerOutlined,
+  FireOutlined,
   WarningOutlined,
   ReloadOutlined,
   EyeOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { vehicleApi, mockApi } from '@/services/api';
-import type { VehicleStatusDTO, TemperatureZoneStatusDTO } from '@/types';
+import { vehicleApi, mockApi, fenceApi, alertApi } from '@/services/api';
+import type { VehicleStatusDTO, TemperatureZoneStatusDTO, ElectronicFenceDTO, AlertDTO } from '@/types';
 import { ZONE_TYPE_CONFIG, TEMPERATURE_STATUS_CONFIG } from '@/types';
 import VehicleMap from '@/components/VehicleMap';
+import AlertModal from '@/components/AlertModal';
 import dayjs from 'dayjs';
 
 export default function VehicleDashboard() {
@@ -20,6 +22,11 @@ export default function VehicleDashboard() {
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleStatusDTO | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [fences, setFences] = useState<ElectronicFenceDTO[]>([]);
+  const [alerts, setAlerts] = useState<AlertDTO[]>([]);
+  const [alertModalVisible, setAlertModalVisible] = useState(false);
+  const [alertStats, setAlertStats] = useState({ totalPending: 0, criticalPending: 0, total24h: 0 });
+  const prevAlertCount = useRef(0);
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -36,8 +43,18 @@ export default function VehicleDashboard() {
 
   useEffect(() => {
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 30000);
-    return () => clearInterval(interval);
+    fetchFences();
+    fetchAlerts();
+
+    const vehicleInterval = setInterval(fetchVehicles, 30000);
+    const alertInterval = setInterval(fetchAlerts, 5000);
+    const fenceInterval = setInterval(fetchFences, 60000);
+
+    return () => {
+      clearInterval(vehicleInterval);
+      clearInterval(alertInterval);
+      clearInterval(fenceInterval);
+    };
   }, []);
 
   const handleSendMockData = async (plateNumber: string) => {
@@ -58,6 +75,52 @@ export default function VehicleDashboard() {
     } catch (error) {
       message.error('推送失败');
     }
+  };
+
+  const handleSendMockDataWithHighTemp = async (plateNumber: string) => {
+    try {
+      await mockApi.sendMockDataWithHighTemp(plateNumber);
+      message.success(`${plateNumber} 高温模拟数据已推送（用于测试报警）`);
+      fetchVehicles();
+    } catch (error) {
+      message.error('推送失败');
+    }
+  };
+
+  const fetchFences = async () => {
+    try {
+      const data = await fenceApi.getAllFences(true);
+      setFences(data);
+    } catch (error) {
+      console.error('Failed to fetch fences:', error);
+    }
+  };
+
+  const fetchAlerts = async () => {
+    try {
+      const [pendingAlerts, stats] = await Promise.all([
+        alertApi.getPendingAlerts(),
+        alertApi.getAlertStats(),
+      ]);
+      setAlerts(pendingAlerts);
+      setAlertStats(stats);
+
+      if (pendingAlerts.length > prevAlertCount.current && prevAlertCount.current > 0) {
+        const newAlerts = pendingAlerts.length - prevAlertCount.current;
+        message.warning(`🚨 收到 ${newAlerts} 条新报警！请及时处理`);
+        if (pendingAlerts.some((a) => a.alertLevel === 'CRITICAL')) {
+          setAlertModalVisible(true);
+        }
+      }
+      prevAlertCount.current = pendingAlerts.length;
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+    }
+  };
+
+  const handleAlertHandled = () => {
+    fetchAlerts();
+    fetchVehicles();
   };
 
   const showVehicleDetail = (vehicle: VehicleStatusDTO) => {
@@ -104,9 +167,32 @@ export default function VehicleDashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 className="page-title">运输车辆状态看板</h1>
         <Space>
+          <Badge count={alertStats.criticalPending} offset={[-5, 5]}>
+            <Button
+              icon={<BellOutlined />}
+              danger
+              onClick={() => setAlertModalVisible(true)}
+            >
+              报警中心 ({alertStats.totalPending})
+            </Button>
+          </Badge>
+          <Button
+            icon={<FireOutlined />}
+            danger
+            onClick={async () => {
+              try {
+                await mockApi.sendMockDataWithHighTempForAll();
+                message.success('所有车辆高温模拟数据已推送（连续3次将触发报警）');
+                fetchVehicles();
+              } catch (error) {
+                message.error('推送失败');
+              }
+            }}
+          >
+            模拟全部高温
+          </Button>
           <Button
             icon={<WarningOutlined />}
-            danger
             onClick={async () => {
               try {
                 await mockApi.sendMockDataWithGpsLostForAll();
@@ -170,7 +256,7 @@ export default function VehicleDashboard() {
             <Statistic
               title="运行温区"
               value={totalZones}
-              prefix={<ThermometerOutlined />}
+              prefix={<FireOutlined />}
               valueStyle={{ color: '#722ed1' }}
             />
           </Card>
@@ -185,10 +271,25 @@ export default function VehicleDashboard() {
             />
           </Card>
         </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="待处理报警"
+              value={alertStats.totalPending}
+              prefix={<BellOutlined />}
+              valueStyle={{ color: alertStats.criticalPending > 0 ? '#ff4d4f' : alertStats.totalPending > 0 ? '#fa8c16' : '#8c8c8c' }}
+            />
+            {alertStats.criticalPending > 0 && (
+              <div style={{ color: '#ff4d4f', fontSize: 12, marginTop: 4 }}>
+                <FireOutlined /> {alertStats.criticalPending} 条严重报警待处理！
+              </div>
+            )}
+          </Card>
+        </Col>
       </Row>
 
       <Card title="车辆实时位置" style={{ marginBottom: 24 }}>
-        <VehicleMap vehicles={vehicles} />
+        <VehicleMap vehicles={vehicles} fences={fences} />
       </Card>
 
       <Row gutter={[16, 16]}>
@@ -219,9 +320,16 @@ export default function VehicleDashboard() {
                   <ReloadOutlined /> 推送数据
                 </Button>,
                 <Button
-                  key="gps-lost"
+                  key="high-temp"
                   type="link"
                   danger
+                  onClick={() => handleSendMockDataWithHighTemp(vehicle.plateNumber)}
+                >
+                  <FireOutlined /> 模拟高温
+                </Button>,
+                <Button
+                  key="gps-lost"
+                  type="link"
                   onClick={() => handleSendMockDataWithGpsLost(vehicle.plateNumber)}
                 >
                   <WarningOutlined /> 模拟GPS丢失
@@ -388,6 +496,13 @@ export default function VehicleDashboard() {
           </div>
         )}
       </Modal>
+
+      <AlertModal
+        visible={alertModalVisible}
+        alerts={alerts}
+        onClose={() => setAlertModalVisible(false)}
+        onAlertHandled={handleAlertHandled}
+      />
     </div>
   );
 }

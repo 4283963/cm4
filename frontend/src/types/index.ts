@@ -62,11 +62,55 @@ export interface CargoInfoDTO {
   requiredMinTemp: number;
   requiredMaxTemp: number;
   status: string;
+  alertStatus: string;
   loadingTime: string;
   expectedArrivalTime: string;
   vehiclePlate: string;
   zoneCode: string;
   zoneName: string;
+}
+
+export interface ElectronicFenceDTO {
+  id: number;
+  fenceName: string;
+  fenceType: string;
+  coordinates: number[][];
+  centerLatitude: number;
+  centerLongitude: number;
+  radius: number;
+  maxTemperature: number;
+  description: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertDTO {
+  id: number;
+  alertType: string;
+  alertLevel: string;
+  alertStatus: string;
+  cargoBatchId: number;
+  cargoBatchNo: string;
+  vehiclePlate: string;
+  fenceId: number;
+  fenceName: string;
+  latitude: number;
+  longitude: number;
+  temperature: number;
+  maxTemperature: number;
+  consecutiveCount: number;
+  message: string;
+  acknowledged: boolean;
+  acknowledgedBy: string;
+  acknowledgedAt: string;
+  createdAt: string;
+}
+
+export interface AlertStats {
+  totalPending: number;
+  criticalPending: number;
+  total24h: number;
 }
 
 export interface TracePointDTO {

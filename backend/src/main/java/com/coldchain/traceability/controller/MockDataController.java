@@ -88,4 +88,28 @@ public class MockDataController {
                 Map.of("status", "SUCCESS",
                         "message", "Mock data with GPS lost processed for all vehicles")));
     }
+
+    @PostMapping("/send-high-temp/{plateNumber}")
+    public ResponseEntity<ApiResponse<Map<String, String>>> sendMockDataWithHighTemperature(
+            @PathVariable String plateNumber) {
+        log.info("Sending mock data with HIGH TEMPERATURE for vehicle: {}", plateNumber);
+        try {
+            mockDataService.sendMockDataWithHighTemperature(plateNumber, true);
+            return ResponseEntity.ok(ApiResponse.success(
+                    Map.of("status", "SUCCESS",
+                            "message", "Mock data with high temperature processed for " + plateNumber)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(404, e.getMessage()));
+        }
+    }
+
+    @PostMapping("/send-all-high-temp")
+    public ResponseEntity<ApiResponse<Map<String, String>>> sendMockDataWithHighTempForAll() {
+        log.info("Sending mock data with HIGH TEMPERATURE for all vehicles");
+        mockDataService.sendMockDataWithHighTempForAllVehicles();
+        return ResponseEntity.ok(ApiResponse.success(
+                Map.of("status", "SUCCESS",
+                        "message", "Mock data with high temperature processed for all vehicles")));
+    }
 }

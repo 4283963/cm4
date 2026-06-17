@@ -22,4 +22,10 @@ public interface CargoBatchRepository extends JpaRepository<CargoBatch, Long> {
 
     @Query("SELECT c FROM CargoBatch c JOIN FETCH c.temperatureZone tz JOIN FETCH tz.vehicle v WHERE c.status = 'IN_TRANSIT'")
     List<CargoBatch> findAllInTransitWithDetails();
+
+    @Query("SELECT c FROM CargoBatch c JOIN FETCH c.temperatureZone tz JOIN FETCH tz.vehicle v " +
+           "WHERE tz.vehicle.plateNumber = :plateNumber AND tz.zoneCode = :zoneCode AND c.status = 'IN_TRANSIT'")
+    List<CargoBatch> findInTransitByVehiclePlateAndZoneCode(
+            @Param("plateNumber") String plateNumber,
+            @Param("zoneCode") String zoneCode);
 }

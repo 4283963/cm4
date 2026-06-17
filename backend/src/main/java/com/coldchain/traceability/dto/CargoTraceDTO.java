@@ -26,6 +26,7 @@ public class CargoTraceDTO {
         private BigDecimal requiredMinTemp;
         private BigDecimal requiredMaxTemp;
         private String status;
+        private String alertStatus;
         private LocalDateTime loadingTime;
         private LocalDateTime expectedArrivalTime;
         private String vehiclePlate;

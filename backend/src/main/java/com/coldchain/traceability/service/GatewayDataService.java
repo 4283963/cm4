@@ -23,6 +23,7 @@ public class GatewayDataService {
     private final TemperatureZoneRepository temperatureZoneRepository;
     private final CargoBatchRepository cargoBatchRepository;
     private final CargoTraceLogRepository traceLogRepository;
+    private final AlertDetectionService alertDetectionService;
 
     @Async
     @Transactional
@@ -93,6 +94,8 @@ public class GatewayDataService {
 
         vehicle.setLastUpdateTime(LocalDateTime.now());
         vehicleRepository.save(vehicle);
+
+        alertDetectionService.detectAlerts(vehicle, effectiveLat, effectiveLng, gatewayData);
     }
 
     private Vehicle createNewVehicle(GatewayDataDTO gatewayData) {

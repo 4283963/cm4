@@ -45,6 +45,11 @@ public class TemperatureZone {
     @Column(length = 20)
     private String zoneType;
 
+    @Column(nullable = false)
+    private Integer consecutiveOverTempCount = 0;
+
+    private LocalDateTime lastTemperatureCheck;
+
     @OneToMany(mappedBy = "temperatureZone", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CargoBatch> cargoBatches = new ArrayList<>();
 

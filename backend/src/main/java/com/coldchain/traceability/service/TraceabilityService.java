@@ -71,6 +71,7 @@ public class TraceabilityService {
         info.setRequiredMinTemp(cargo.getRequiredMinTemp());
         info.setRequiredMaxTemp(cargo.getRequiredMaxTemp());
         info.setStatus(cargo.getStatus());
+        info.setAlertStatus(cargo.getAlertStatus());
         info.setLoadingTime(cargo.getLoadingTime());
         info.setExpectedArrivalTime(cargo.getExpectedArrivalTime());
 

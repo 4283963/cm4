@@ -6,7 +6,6 @@ import {
   Card,
   Statistic,
   Tag,
-  List,
   Button,
   Space,
   Select,
@@ -22,7 +21,7 @@ import {
 import {
   SearchOutlined,
   EnvironmentOutlined,
-  ThermometerOutlined,
+  FireOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -30,12 +29,13 @@ import {
   ArrowRightOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { cargoApi, traceabilityApi, mockApi } from '@/services/api';
+import { traceabilityApi, cargoApi, mockApi, fenceApi } from '@/services/api';
 import type {
   CargoInfoDTO,
   CargoTraceDTO,
   TracePointDTO,
   TemperatureAlertDTO,
+  ElectronicFenceDTO,
 } from '@/types';
 import { ZONE_TYPE_CONFIG, TEMPERATURE_STATUS_CONFIG } from '@/types';
 import VehicleMap from '@/components/VehicleMap';
@@ -57,6 +57,7 @@ export default function CargoTraceability() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filterPlate, setFilterPlate] = useState<string | undefined>(state?.plateNumber);
+  const [fences, setFences] = useState<ElectronicFenceDTO[]>([]);
 
   const fetchCargos = async () => {
     try {
@@ -68,8 +69,18 @@ export default function CargoTraceability() {
     }
   };
 
+  const fetchFences = async () => {
+    try {
+      const data = await fenceApi.getAllFences(true);
+      setFences(data);
+    } catch (error) {
+      console.error('Failed to fetch fences:', error);
+    }
+  };
+
   useEffect(() => {
     fetchCargos();
+    fetchFences();
   }, []);
 
   useEffect(() => {
@@ -126,7 +137,7 @@ export default function CargoTraceability() {
     try {
       const startTime = dates[0].format('YYYY-MM-DD HH:mm:ss');
       const endTime = dates[1].format('YYYY-MM-DD HH:mm:ss');
-      const data = await traceabilityApi.getCargoTraceabilityByTimeRange(
+      const data = await traceabilityApi.getCargoTraceabilityByRange(
         selectedBatchNo,
         startTime,
         endTime
@@ -418,11 +429,27 @@ export default function CargoTraceability() {
                   </Col>
                   <Col span={12}>
                     <div className="cargo-info-item">
-                      <span className="label">状态</span>
+                      <span className="label">运输状态</span>
                       <span className="value">
                         <Tag color={traceData.cargoInfo.status === 'IN_TRANSIT' ? 'processing' : 'green'}>
                           {traceData.cargoInfo.status === 'IN_TRANSIT' ? '运输中' : '已送达'}
                         </Tag>
+                      </span>
+                    </div>
+                  </Col>
+                  <Col span={12}>
+                    <div className="cargo-info-item">
+                      <span className="label">报警状态</span>
+                      <span className="value">
+                        {traceData.cargoInfo.alertStatus === 'BROKEN_CHAIN' ? (
+                          <Tag color="red" style={{ fontSize: 14, padding: '4px 12px' }}>
+                            <WarningOutlined /> 已变质拦截
+                          </Tag>
+                        ) : (
+                          <Tag color="green">
+                            <CheckCircleOutlined /> 正常
+                          </Tag>
+                        )}
                       </span>
                     </div>
                   </Col>
@@ -577,6 +604,8 @@ export default function CargoTraceability() {
                       tracePoints={traceData.tracePoints}
                       showTrace={true}
                       height="500px"
+                      fences={fences}
+                      showFences={true}
                     />
                     <div style={{ marginTop: 16, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                       <Space>
@@ -615,6 +644,29 @@ export default function CargoTraceability() {
                         />
                         <span>行驶轨迹</span>
                       </Space>
+                      <Space>
+                        <div
+                          style={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            background: 'transparent',
+                            border: '2px dashed #8c8c8c',
+                          }}
+                        />
+                        <span>GPS信号丢失</span>
+                      </Space>
+                      <Space>
+                        <div
+                          style={{
+                            width: 20,
+                            height: 2,
+                            background: '#fa8c16',
+                            borderStyle: 'dashed',
+                          }}
+                        />
+                        <span>电子围栏</span>
+                      </Space>
                     </div>
                   </Card>
                 </TabPane>
@@ -643,7 +695,7 @@ export default function CargoTraceability() {
                         items={[...traceData.tracePoints]
                           .reverse()
                           .slice(0, 20)
-                          .map((point: TracePointDTO, index: number) => ({
+                          .map((point: TracePointDTO, _index: number) => ({
                             color: point.gpsLost
                               ? 'orange'
                               : point.temperatureStatus === 'NORMAL'
@@ -711,7 +763,7 @@ export default function CargoTraceability() {
                                   </Col>
                                   <Col span={12}>
                                     <div style={{ color: '#8c8c8c', fontSize: 12 }}>
-                                      <ThermometerOutlined style={{ marginRight: 4 }} />
+                                      <FireOutlined style={{ marginRight: 4 }} />
                                       温度
                                     </div>
                                     <div

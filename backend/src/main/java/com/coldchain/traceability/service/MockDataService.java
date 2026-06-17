@@ -323,4 +323,42 @@ public class MockDataService {
             sendMockDataWithGpsLost(vehicle.getPlateNumber());
         }
     }
+
+    @Transactional
+    public void sendMockDataWithHighTemperature(String plateNumber, boolean forceHighTemp) {
+        GatewayDataDTO mockData = generateMockGatewayData(plateNumber, false);
+
+        if (forceHighTemp && mockData.getTemperatureZones() != null) {
+            for (GatewayDataDTO.TemperatureZoneDataDTO zone : mockData.getTemperatureZones()) {
+                if ("CHILLED-01".equals(zone.getZoneCode()) || "CHILLED".equals(zone.getZoneCode())) {
+                    zone.setAvgTemperature(new java.math.BigDecimal("8.5"));
+                    for (GatewayDataDTO.SensorDataDTO sensor : zone.getSensors()) {
+                        if ("temperature".equals(sensor.getSensorType())) {
+                            sensor.setValue(new java.math.BigDecimal("8.5"));
+                        }
+                    }
+                } else if ("FRESH-01".equals(zone.getZoneCode()) || "FRESH".equals(zone.getZoneCode())) {
+                    zone.setAvgTemperature(new java.math.BigDecimal("12.0"));
+                    for (GatewayDataDTO.SensorDataDTO sensor : zone.getSensors()) {
+                        if ("temperature".equals(sensor.getSensorType())) {
+                            sensor.setValue(new java.math.BigDecimal("12.0"));
+                        }
+                    }
+                }
+            }
+            log.warn("Simulating HIGH TEMPERATURE scenario for vehicle {} - temps elevated for alert testing",
+                    plateNumber);
+        }
+
+        gatewayDataService.processGatewayData(mockData);
+        log.info("Mock data with high temp sent for vehicle: {}", plateNumber);
+    }
+
+    @Transactional
+    public void sendMockDataWithHighTempForAllVehicles() {
+        List<Vehicle> vehicles = vehicleRepository.findAll();
+        for (Vehicle vehicle : vehicles) {
+            sendMockDataWithHighTemperature(vehicle.getPlateNumber(), true);
+        }
+    }
 }

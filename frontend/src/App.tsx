@@ -5,9 +5,11 @@ import {
   AppstoreOutlined,
   DashboardOutlined,
   ReloadOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import VehicleDashboard from '@/pages/VehicleDashboard';
 import CargoTraceability from '@/pages/CargoTraceability';
+import FenceManagement from '@/pages/FenceManagement';
 import { mockApi } from '@/services/api';
 import { useState } from 'react';
 import { message } from 'antd';
@@ -41,6 +43,11 @@ function App() {
       key: '/traceability',
       icon: <AppstoreOutlined />,
       label: <Link to="/traceability">货品溯源</Link>,
+    },
+    {
+      key: '/fences',
+      icon: <EnvironmentOutlined />,
+      label: <Link to="/fences">电子围栏管理</Link>,
     },
   ];
 
@@ -86,6 +93,7 @@ function App() {
               <Route path="/" element={<VehicleDashboard />} />
               <Route path="/traceability" element={<CargoTraceability />} />
               <Route path="/traceability/:batchNo" element={<CargoTraceability />} />
+              <Route path="/fences" element={<FenceManagement />} />
             </Routes>
           </Content>
         </Layout>

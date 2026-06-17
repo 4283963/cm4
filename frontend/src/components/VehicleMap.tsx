@@ -1,6 +1,6 @@
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
-import type { VehicleStatusDTO, TracePointDTO } from '@/types';
+import type { VehicleStatusDTO, TracePointDTO, ElectronicFenceDTO } from '@/types';
 import dayjs from 'dayjs';
 
 const createCustomIcon = (status: string) => {
@@ -66,6 +66,8 @@ interface VehicleMapProps {
   tracePoints?: TracePointDTO[];
   showTrace?: boolean;
   height?: string;
+  fences?: ElectronicFenceDTO[];
+  showFences?: boolean;
 }
 
 export default function VehicleMap({
@@ -73,6 +75,8 @@ export default function VehicleMap({
   tracePoints = [],
   showTrace = false,
   height = '500px',
+  fences = [],
+  showFences = true,
 }: VehicleMapProps) {
   const center: [number, number] = vehicles.length > 0
     ? [vehicles[0].currentLatitude || 39.9042, vehicles[0].currentLongitude || 116.4074]
@@ -98,6 +102,39 @@ export default function VehicleMap({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+
+      {showFences && fences.map((fence) => (
+        fence.coordinates && fence.coordinates.length >= 3 && (
+          <Polygon
+            key={fence.id}
+            positions={fence.coordinates as [number, number][]}
+            pathOptions={{
+              color: fence.enabled ? '#fa8c16' : '#8c8c8c',
+              fillColor: fence.enabled ? '#fa8c16' : '#8c8c8c',
+              fillOpacity: 0.1,
+              weight: 2,
+              dashArray: '5, 5',
+            }}
+          >
+            <Popup>
+              <div className="map-popup">
+                <div className="popup-title">{fence.fenceName}</div>
+                <div className="popup-item">
+                  最高温度限制：<span style={{ color: '#fa8c16' }}>{fence.maxTemperature}°C</span>
+                </div>
+                <div className="popup-item">
+                  状态：<span>{fence.enabled ? '启用' : '禁用'}</span>
+                </div>
+                {fence.description && (
+                  <div className="popup-item">
+                    描述：<span>{fence.description}</span>
+                  </div>
+                )}
+              </div>
+            </Popup>
+          </Polygon>
+        )
+      ))}
 
       {vehicles.map((vehicle) => (
         <Marker

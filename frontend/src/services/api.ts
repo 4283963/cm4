@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, VehicleStatusDTO, CargoTraceDTO, CargoInfoDTO } from '@/types';
+import type { ApiResponse, VehicleStatusDTO, CargoTraceDTO, CargoInfoDTO, ElectronicFenceDTO, AlertDTO, AlertStats } from '@/types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -59,6 +59,52 @@ export const mockApi = {
 
   sendMockDataWithGpsLostForAll: () =>
     api.post<ApiResponse<unknown>>('/mock/send-all-gps-lost').then((res) => res.data.data),
+
+  sendMockDataWithHighTemp: (plateNumber: string) =>
+    api.post<ApiResponse<unknown>>(`/mock/send-high-temp/${plateNumber}`).then((res) => res.data.data),
+
+  sendMockDataWithHighTempForAll: () =>
+    api.post<ApiResponse<unknown>>('/mock/send-all-high-temp').then((res) => res.data.data),
+};
+
+export const fenceApi = {
+  getAllFences: (activeOnly?: boolean) =>
+    api.get<ApiResponse<ElectronicFenceDTO[]>>('/api/fences', { params: { activeOnly } }).then((res) => res.data.data),
+
+  getFenceById: (id: number) =>
+    api.get<ApiResponse<ElectronicFenceDTO>>(`/api/fences/${id}`).then((res) => res.data.data),
+
+  createFence: (data: Partial<ElectronicFenceDTO>) =>
+    api.post<ApiResponse<ElectronicFenceDTO>>('/api/fences', data).then((res) => res.data.data),
+
+  updateFence: (id: number, data: Partial<ElectronicFenceDTO>) =>
+    api.put<ApiResponse<ElectronicFenceDTO>>(`/api/fences/${id}`, data).then((res) => res.data.data),
+
+  deleteFence: (id: number) =>
+    api.delete<ApiResponse<unknown>>(`/api/fences/${id}`).then((res) => res.data.data),
+};
+
+export const alertApi = {
+  getAllAlerts: (status?: string) =>
+    api.get<ApiResponse<AlertDTO[]>>('/api/alerts', { params: { status } }).then((res) => res.data.data),
+
+  getPendingAlerts: () =>
+    api.get<ApiResponse<AlertDTO[]>>('/api/alerts/pending').then((res) => res.data.data),
+
+  getAlertStats: () =>
+    api.get<ApiResponse<AlertStats>>('/api/alerts/stats').then((res) => res.data.data),
+
+  getAlertById: (id: number) =>
+    api.get<ApiResponse<AlertDTO>>(`/api/alerts/${id}`).then((res) => res.data.data),
+
+  getAlertsForCargo: (cargoBatchId: number) =>
+    api.get<ApiResponse<AlertDTO[]>>(`/api/alerts/cargo/${cargoBatchId}`).then((res) => res.data.data),
+
+  acknowledgeAlert: (id: number, acknowledgedBy?: string) =>
+    api.post<ApiResponse<AlertDTO>>(`/api/alerts/${id}/acknowledge`, { acknowledgedBy }).then((res) => res.data.data),
+
+  resolveAlert: (id: number, acknowledgedBy?: string) =>
+    api.post<ApiResponse<AlertDTO>>(`/api/alerts/${id}/resolve`, { acknowledgedBy }).then((res) => res.data.data),
 };
 
 export default api;
