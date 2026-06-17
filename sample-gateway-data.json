@@ -1,0 +1,115 @@
+{
+  "gateway_id": "GW-TEST-001",
+  "message_id": "MSG-1705288400000",
+  "timestamp": "2024-01-15T10:30:00",
+  "vehicle": {
+    "plate_number": "京A·12345",
+    "vehicle_id": "VH-001",
+    "driver_id": "DR-001"
+  },
+  "gps": {
+    "latitude": 39.9142,
+    "longitude": 116.4174,
+    "altitude": 52.5,
+    "speed": 62.3,
+    "heading": 185.5,
+    "satellites": 12,
+    "location_name": "北京市朝阳区京哈高速",
+    "timestamp": "2024-01-15T10:30:00"
+  },
+  "temperature_zones": [
+    {
+      "zone_code": "FROZEN-01",
+      "zone_name": "冷冻区-1",
+      "avg_temperature": -19.8,
+      "status": "NORMAL",
+      "sensors": [
+        {
+          "sensor_id": "TEMP-FZ-01-A",
+          "sensor_type": "temperature",
+          "value": -19.5,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:58"
+        },
+        {
+          "sensor_id": "TEMP-FZ-01-B",
+          "sensor_type": "temperature",
+          "value": -20.1,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:58"
+        },
+        {
+          "sensor_id": "HUM-FZ-01",
+          "sensor_type": "humidity",
+          "value": 62.5,
+          "unit": "%",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:58"
+        }
+      ]
+    },
+    {
+      "zone_code": "CHILLED-01",
+      "zone_name": "冷藏区-1",
+      "avg_temperature": 2.3,
+      "status": "NORMAL",
+      "sensors": [
+        {
+          "sensor_id": "TEMP-CL-01-A",
+          "sensor_type": "temperature",
+          "value": 2.1,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:59"
+        },
+        {
+          "sensor_id": "TEMP-CL-01-B",
+          "sensor_type": "temperature",
+          "value": 2.5,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:59"
+        },
+        {
+          "sensor_id": "HUM-CL-01",
+          "sensor_type": "humidity",
+          "value": 78.3,
+          "unit": "%",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:29:59"
+        }
+      ]
+    },
+    {
+      "zone_code": "FRESH-01",
+      "zone_name": "保鲜区-1",
+      "avg_temperature": 7.2,
+      "status": "NORMAL",
+      "sensors": [
+        {
+          "sensor_id": "TEMP-FR-01",
+          "sensor_type": "temperature",
+          "value": 7.2,
+          "unit": "°C",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:00"
+        },
+        {
+          "sensor_id": "HUM-FR-01",
+          "sensor_type": "humidity",
+          "value": 85.0,
+          "unit": "%",
+          "status": "NORMAL",
+          "timestamp": "2024-01-15T10:30:00"
+        }
+      ]
+    }
+  ],
+  "device_status": {
+    "battery_level": 94,
+    "signal_strength": 88,
+    "connection_status": "CONNECTED"
+  }
+}
